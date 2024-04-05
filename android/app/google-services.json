@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "125115146790",
+    "project_id": "bill-project-efd43",
+    "storage_bucket": "bill-project-efd43.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:125115146790:android:b8bde26264c374060e3ce7",
+        "android_client_info": {
+          "package_name": "com.example.bill_project.bill_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTybZjPZzumBg1ZjYvGdDGRQSroPEg9JQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
