@@ -134,6 +134,7 @@ class ThemedTextField extends StatefulWidget {
   String? Function(String?)? validator;
   double borderRadiusTextField = 50;
   TextAlign textAlign;
+  int? maxLength;
 
   ThemedTextField({
     super.key,
@@ -163,6 +164,7 @@ class ThemedTextField extends StatefulWidget {
     this.borderRadiusTextField = 50,
     this.validator,
     this.textAlign = TextAlign.start,
+    this.maxLength,
   });
 
   @override
@@ -192,6 +194,8 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
       inputFormatters: [
         if (widget.isAcceptNumbersOnly)
           FilteringTextInputFormatter.allow(RegExp('[0-9]')),
+        if (widget.maxLength != null)
+          LengthLimitingTextInputFormatter(widget.maxLength),
       ],
       textAlign: widget.textAlign,
       style: TextStyle(

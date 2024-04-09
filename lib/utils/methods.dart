@@ -2,7 +2,13 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:image_editor_plus/image_editor_plus.dart' as editor;
+import 'package:image_editor_plus/options.dart' as options;
+import 'package:image_editor_plus/utils.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'colors.dart';
 
@@ -64,77 +70,136 @@ intiOverLay() {
   );
 }
 
-getOverlay(/*BuildContext context*/) {
-  // overlayStates = Overlay.of(context);
-  // if (overlayEntry != null && !_isLoading && overlayStates != null) {
-  //   overlayStates!.insert(overlayEntry!);
-  //   _isLoading = true;
-  // }
-  if (!_isLoading) {
+getOverlay() {
+  print("OVERLAY : DISPLAYED");
+  overlayStates = Overlay.of(Get.overlayContext!);
+  if (overlayEntry != null && !_isLoading && overlayStates != null) {
+    overlayStates!.insert(overlayEntry!);
+    print("OVERLAY : DISPLAYED");
     _isLoading = true;
-    Get.dialog(
-      Dialog(
-        backgroundColor: Colors.transparent,
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-            ),
-            child: const CircularProgressIndicator(
-              color: colorPrimary,
-              strokeWidth: 2,
-            ),
-          ),
-        ),
-      ),
-      barrierDismissible: false,
-    );
   }
 }
 
 removeOverlay() {
-  log("_isLoading : $_isLoading && ${overlayEntry != null}");
-  if (_isLoading) {
-    // Get.back(closeOverlays: true);
-    Navigator.pop(Get.overlayContext!, true);
+  print("OVERLAY :Came for REMOVED");
+  if (overlayEntry != null && _isLoading) {
     _isLoading = false;
+    overlayEntry!.remove();
+    print("OVERLAY : REMOVED");
   }
-  // if (_isLoading && overlayEntry != null) {
-  //   _isLoading = false;
-  //   overlayEntry!.remove();
-  // }
 }
 
-/*Future<File?> sendForCrop(String path) async {
-  print(path);
-  final editedImage = await Navigator.push(
-    Get.context!,
-    MaterialPageRoute(
-      builder: (context) => ImageEditor(
-        image: File(path), // <-- Uint8List of image
+buildPikeImageChooseDialog(void Function(File? image) onImagePick) async {
+  Future<File?> sendForCrop(String path) async {
+    log(path);
+    Uint8List imageUint8List = await File(path).readAsBytes();
+    final editedImage = await Navigator.push(
+      Get.context!,
+      MaterialPageRoute(
+        builder: (context) => editor.ImageCropper(
+          image: imageUint8List,
+          availableRatios: const [
+            options.AspectRatio(
+              title: "1/1",
+              ratio: 1,
+            )
+          ],
+        ),
       ),
+    );
+    final convertedImage = await ImageUtils.convert(
+      editedImage,
+      format: 'jpeg',
+      quality: 100,
+    );
+
+    Directory cacheDirectory = await getApplicationCacheDirectory();
+    log(cacheDirectory.path);
+    File image = await File('${cacheDirectory.path}/temp.jpg')
+        .writeAsBytes(convertedImage);
+    log("IMAGE : ${image.path}");
+    return File(image.path);
+  }
+
+  pickImageFromCamera() async {
+    Get.back();
+    final ImagePicker picker = ImagePicker();
+    final XFile? img = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 50,
+    );
+    if (img != null) {
+      onImagePick(await sendForCrop(img.path));
+    }
+  }
+
+  pickImageFromGallery() async {
+    Get.back();
+    final ImagePicker picker = ImagePicker();
+    XFile? img = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+    );
+    if (img != null) {
+      onImagePick(await sendForCrop(img.path));
+    }
+  }
+
+  Get.bottomSheet(
+    BottomSheet(
+      onClosing: () {},
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 30),
+              const Text(
+                "Pick Image From",
+                style: TextStyle(
+                  fontSize: 24,
+                  color: Colors.black,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Divider(
+                color: colorPrimary.shade100,
+                height: 1,
+              ),
+              ListTile(
+                title: const Text(
+                  'Camera',
+                ),
+                leading: const Icon(
+                  Icons.camera_alt_rounded,
+                  color: colorPrimary,
+                ),
+                onTap: () async {
+                  pickImageFromCamera();
+                },
+              ),
+              ListTile(
+                title: const Text(
+                  'Gallery',
+                ),
+                leading: const Icon(
+                  Icons.photo_rounded,
+                  color: colorPrimary,
+                ),
+                onTap: () async {
+                  pickImageFromGallery();
+                },
+              ),
+            ],
+          ),
+        );
+      },
     ),
   );
-  final convertedImage = await ImageUtils.convert(
-    editedImage,
-    format: 'jpeg',
-    quality: 100,
-  );
-
-  Directory cacheDirectory = await getApplicationCacheDirectory();
-  print(cacheDirectory.path);
-  File image = await File('${cacheDirectory.path}/temp.jpg')
-      .writeAsBytes(convertedImage);
-  print(image.path);
-  if (image != null) {
-    print("IMAGE : " + image.path);
-    return File(image.path);
-  } else {
-    return null;
-  }
-}*/
+}
 
 buildConfirmationDialog(
     String title, String msg, IconData icon, void Function() onYesTap,
