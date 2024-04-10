@@ -53,7 +53,8 @@ class AddProduct extends GetView<AddProductController> {
                                 tag: "PRODUCT-IMAGE",
                                 child: InkWell(
                                   onTap: controller.pickupImage,
-                                  child: controller.isFromUpdate && controller.imageProduct == null
+                                  child: controller.isFromUpdate &&
+                                          controller.imageProduct == null
                                       ? CachedNetworkImage(
                                           imageUrl:
                                               controller.modelUpdate!.imageUrl,
@@ -100,9 +101,16 @@ class AddProduct extends GetView<AddProductController> {
                       ThemedTextField(
                         controller: controller.tfProductName,
                         hintText: "Product Name",
+                        onChanged: (p0) {
+                          if (controller.keyForm.currentState != null) {
+                            controller.keyForm.currentState!.validate();
+                          }
+                        },
                         validator: (p0) {
                           if (p0 == null || p0.isEmpty) {
                             return "Please enter Product Name!";
+                          } else if (!controller.isFromUpdate && !controller.isProductIsUnique(p0)) {
+                            return "Please enter different Product Name! We found this name in your Product list.";
                           }
                           return null;
                         },
@@ -112,6 +120,11 @@ class AddProduct extends GetView<AddProductController> {
                         controller: controller.tfProductPrice,
                         hintText: "Product Price",
                         isAcceptNumbersOnly: true,
+                        onChanged: (p0) {
+                          if (controller.keyForm.currentState != null) {
+                            controller.keyForm.currentState!.validate();
+                          }
+                        },
                         validator: (p0) {
                           if (p0 == null || p0.isEmpty) {
                             return "Please enter Product Price!";
@@ -155,19 +168,19 @@ class AddProduct extends GetView<AddProductController> {
                               onPressed: () {
                                 controller.clearDataFromForm();
                               },
-                              child: Text(controller.isFromUpdate ? "Reset" :"Clear"),
+                              child: Text(
+                                  controller.isFromUpdate ? "Reset" : "Clear"),
                             ),
                           ),
                           const SizedBox(width: spaceHorizontal),
                           Expanded(
                             child: FilledButton(
                               onPressed: () {
-
-                                  controller.saveProduct();
-
+                                controller.saveProduct();
                               },
                               child: Text(
-                                  controller.isFromUpdate ? "Update" : "Save"),
+                                controller.isFromUpdate ? "Update" : "Save",
+                              ),
                             ),
                           ),
                         ],

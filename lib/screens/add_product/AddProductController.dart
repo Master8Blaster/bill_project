@@ -13,13 +13,19 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
+import '../../Database/DatabaseHelper.dart';
+import '../home/HomeController.dart';
+
 class AddProductController extends GetxController {
+  DatabaseHelper databaseHelper = DatabaseHelper.instance;
+
   TextEditingController tfProductName = TextEditingController();
   TextEditingController tfProductPrice = TextEditingController();
   TextEditingController tfProductQuantity = TextEditingController();
   File? imageProduct;
 
   GlobalKey<FormState> keyForm = GlobalKey<FormState>();
+  HomeController controllerHome = Get.find(tag: "HOMECONTROLLER");
 
   ProductModel? modelUpdate;
   bool isFromUpdate = false;
@@ -86,7 +92,7 @@ class AddProductController extends GetxController {
     saveData(String imageUrl, String imageName) async {
       DatabaseReference ref =
           FirebaseDatabase.instance.ref("$keyUsers/$userId/$keyProduct");
-      final key = isFromUpdate ? modelUpdate!.productKey :ref.push().key;
+      final key = isFromUpdate ? modelUpdate!.productKey : ref.push().key;
       if (key != null) {
         await ref.child(key).set({
           keyProductName: tfProductName.text.trim(),
@@ -94,11 +100,24 @@ class AddProductController extends GetxController {
           keyProductQuantity: int.parse(tfProductQuantity.text.trim()),
           keyProductImageUrl: imageUrl,
           keyProductImageName: imageName,
-        }).then((data) {
+        }).then((data) async {
           log("Image Uploaded Successfully.");
           showSnackBarWithText("Image Uploaded Successfully.",
               color: colorGreen);
           clearDataFromForm();
+          if (await databaseHelper.isProductExistInCart(key)) {
+            databaseHelper.updateProduct(
+              ProductModel(
+                productKey: key,
+                name: tfProductName.text.trim(),
+                price: double.parse(tfProductPrice.text.trim()),
+                imageUrl: imageUrl,
+                imageName: imageName,
+                pQuantity: int.parse(tfProductQuantity.text.trim()),
+                quantity: modelUpdate!.quantity.value,
+              ),
+            );
+          }
           removeOverlay();
           Get.back();
         }, onError: (error, stackTrace) {
@@ -187,5 +206,16 @@ class AddProductController extends GetxController {
         }
       },
     );
+  }
+
+  bool isProductIsUnique(String value) {
+    bool isUnique = true;
+    for (ProductModel model in controllerHome.listProduct) {
+      if (model.name.toLowerCase() == value.toLowerCase()) {
+        isUnique = false;
+        break;
+      }
+    }
+    return isUnique;
   }
 }

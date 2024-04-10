@@ -12,6 +12,7 @@ class ImageNetwork extends StatelessWidget {
   Widget build(BuildContext context) {
     return CachedNetworkImage(
       imageUrl: imageUrl ?? "",
+      fit: BoxFit.fill,
       imageBuilder: (context, imageProvider) {
         return Container(
           color: Colors.white,
@@ -19,11 +20,12 @@ class ImageNetwork extends StatelessWidget {
         );
       },
       progressIndicatorBuilder: (context, url, downloadProgress) => Center(
-          child: CircularProgressIndicator(
-        value: downloadProgress.progress,
-        color: colorPrimary,
-        strokeWidth: 2,
-      )),
+        child: CircularProgressIndicator(
+          value: downloadProgress.progress,
+          color: colorPrimary,
+          strokeWidth: 2,
+        ),
+      ),
       errorWidget: (context, url, error) => Icon(
         Icons.image_not_supported_rounded,
         color: colorPrimary.shade100,

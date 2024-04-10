@@ -51,6 +51,8 @@ dependencies:
   cached_network_image: ^3.3.1
   image_editor_plus: ^1.0.5
 
+#  Others
+  qr_flutter: ^4.1.0
 
 
 dev_dependencies:

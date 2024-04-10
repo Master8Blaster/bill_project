@@ -243,6 +243,7 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
             ? SizedBox(
                 height: 30, width: 30, child: Center(child: widget.preFix))
             : null,
+        errorMaxLines: 2,
         prefixIconColor: colorPrimary.shade100,
         suffixIcon: widget.isPasswordTextField
             ? InkWell(

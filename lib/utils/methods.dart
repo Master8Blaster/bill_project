@@ -109,8 +109,8 @@ buildPikeImageChooseDialog(void Function(File? image) onImagePick) async {
     );
     final convertedImage = await ImageUtils.convert(
       editedImage,
-      format: 'jpeg',
-      quality: 100,
+      format: 'png',
+      quality: 25,
     );
 
     Directory cacheDirectory = await getApplicationCacheDirectory();
@@ -126,7 +126,7 @@ buildPikeImageChooseDialog(void Function(File? image) onImagePick) async {
     final ImagePicker picker = ImagePicker();
     final XFile? img = await picker.pickImage(
       source: ImageSource.camera,
-      imageQuality: 50,
+      imageQuality: 100,
     );
     if (img != null) {
       onImagePick(await sendForCrop(img.path));
@@ -138,7 +138,7 @@ buildPikeImageChooseDialog(void Function(File? image) onImagePick) async {
     final ImagePicker picker = ImagePicker();
     XFile? img = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 50,
+      imageQuality: 100,
     );
     if (img != null) {
       onImagePick(await sendForCrop(img.path));
