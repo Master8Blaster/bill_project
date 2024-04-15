@@ -1,4 +1,5 @@
 import 'package:bill_project/Database/DatabaseHelper.dart';
+import 'package:bill_project/conponents/Widgets.dart';
 import 'package:bill_project/utils/Preferences.dart';
 import 'package:bill_project/utils/constants.dart';
 import 'package:bill_project/utils/methods.dart';
@@ -58,7 +59,7 @@ class HomeController extends GetxController {
           ),
         );
       }
-      mapWithCart();
+      await mapWithCart();
     } catch (e) {
       print("GETDATA ${e.toString()}");
     } finally {
@@ -105,6 +106,11 @@ class HomeController extends GetxController {
         }
       }
     }
+    if (list.isEmpty) {
+      for (ProductModel m in listProduct) {
+        m.quantity = 0.obs;
+      }
+    }
     listCartProduct.clear();
     listCartProduct.addAll(list);
     search("");
@@ -131,6 +137,11 @@ class HomeController extends GetxController {
       model.quantity--;
       databaseHelper.updateProduct(model);
     }
+    mapWithCart();
+  }
+
+  Future<void> clearCart() async {
+    databaseHelper.deleteAllCartProducts();
     mapWithCart();
   }
 
@@ -181,7 +192,34 @@ class HomeController extends GetxController {
                     Icons.attach_money_rounded,
                     color: colorPrimary,
                   ),
-                  onTap: () async {},
+                  onTap: () async {
+                    Get.back();
+                    // PrintingClass().printRisipt();
+                    uploadTransaction(paymentType: PaymentType.CASH);
+                  },
+                ),
+                Divider(
+                  color: colorPrimary.shade100,
+                  height: 1,
+                  indent: 55,
+                ),
+                ListTile(
+                  title: const Text(
+                    'Card',
+                  ),
+                  leading: const Icon(
+                    Icons.credit_card_rounded,
+                    color: colorPrimary,
+                  ),
+                  onTap: () async {
+                    Get.back();
+                    uploadTransaction(paymentType: PaymentType.CARD);
+                  },
+                ),
+                Divider(
+                  color: colorPrimary.shade100,
+                  height: 1,
+                  indent: 55,
                 ),
                 ListTile(
                   title: const Text(
@@ -192,18 +230,9 @@ class HomeController extends GetxController {
                     color: colorPrimary,
                   ),
                   onTap: () async {
-                    showBottomDialogWithQr();
+                    Get.back();
+                    showBottomDialogWithQr(total.value);
                   },
-                ),
-                ListTile(
-                  title: const Text(
-                    'Card',
-                  ),
-                  leading: const Icon(
-                    Icons.credit_card_rounded,
-                    color: colorPrimary,
-                  ),
-                  onTap: () async {},
                 ),
               ],
             ),
@@ -213,38 +242,102 @@ class HomeController extends GetxController {
     );
   }
 
-  showBottomDialogWithQr() {
-    Get.bottomSheet(BottomSheet(
-      onClosing: () {},
-      builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 40),
-              QrImageView(
-                data:
-                    "upi://pay?pa=meetdholariya203-1@okicici&am=40.00&cu=INR&pn=VIPIN",
-                version: QrVersions.auto,
-                size: 200.0,
-              ),
-              const SizedBox(height: spaceVertical / 2),
-              Divider(
-                color: colorPrimary.shade100,
-                height: 1,
-              ),
-              const SizedBox(height: spaceVertical / 2),
-              FilledButton(
-                onPressed: () {},
-                child: Text("Done"),
-              ),
-              const SizedBox(height: spaceVertical),
-            ],
-          ),
-        );
-      },
-    ));
+  showBottomDialogWithQr(double price) {
+    Get.bottomSheet(
+      isDismissible: false,
+      BottomSheet(
+        onClosing: () {},
+        builder: (BuildContext context) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 40),
+                QrImageView(
+                  data:
+                      "upi://pay?pa=meetdholariya203-1@okicici&am=$price&cu=INR&pn=VIPIN",
+                  version: QrVersions.auto,
+                  size: 200.0,
+                ),
+                const SizedBox(height: spaceVertical / 2),
+                Divider(
+                  color: colorPrimary.shade100,
+                  height: 1,
+                ),
+                const SizedBox(height: spaceVertical / 2),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FilledButton.tonal(
+                      onPressed: () {
+                        Get.back();
+                      },
+                      child: const Text("Cancel"),
+                    ),
+                    const SizedBox(width: spaceHorizontal),
+                    FilledButton(
+                      onPressed: () {
+                        uploadTransaction(paymentType: PaymentType.ONLINE);
+                        Get.back();
+                      },
+                      child: const Text("Done"),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: spaceVertical),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  uploadTransaction({PaymentType paymentType = PaymentType.CASH}) async {
+    try {
+      getOverlay();
+      String productIds = "";
+      String prices = "";
+      String quantities = "";
+      for (ProductModel model in listCartProduct) {
+        productIds +=
+            productIds.isNotEmpty ? ",${model.productKey}" : model.productKey;
+        prices +=
+            prices.isNotEmpty ? ",${model.price}" : model.price.toString();
+        quantities += quantities.isNotEmpty
+            ? ",${model.quantity}"
+            : model.quantity.toString();
+      }
+
+      String userId = await Preferences().getPrefString(Preferences.prefUserId);
+      DatabaseReference ref =
+          FirebaseDatabase.instance.ref("$keyUsers/$userId/$keyTransaction");
+      final key = ref.push().key;
+      print("PAYMENT ${paymentType.value}");
+      if (key != null) {
+        await ref.child(key).set({
+          keyTransactionProductIds: productIds,
+          keyTransactionProductPrice: prices,
+          keyTransactionProductQuantity: quantities,
+          keyTransactionTotalPrice: total.value,
+          keyTransactionTotalProductCount: productIds.split(",").length,
+          keyTransactionTotalQuantity: totalQuantity.value,
+          keyTransactionPaymentType: paymentType.value,
+          keyTransactionDateTime: DateTime.now().millisecondsSinceEpoch,
+        }).then((value) {
+          clearCart();
+          showSnackBarWithText("Transaction Recorded.", color: colorGreen);
+
+          removeOverlay();
+        }, onError: (e) {
+          removeOverlay();
+          print("uploadTransaction : $e");
+        });
+      }
+    } catch (e) {
+      print("uploadTransaction : $e");
+    }
   }
 }

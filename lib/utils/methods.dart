@@ -1,12 +1,10 @@
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:bill_project/conponents/ImageCroper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:image_editor_plus/image_editor_plus.dart' as editor;
-import 'package:image_editor_plus/options.dart' as options;
-import 'package:image_editor_plus/utils.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -89,36 +87,28 @@ removeOverlay() {
   }
 }
 
-buildPikeImageChooseDialog(void Function(File? image) onImagePick) async {
-  Future<File?> sendForCrop(String path) async {
+buildPikeImageChooseDialog(void Function(String? image) onImagePick) async {
+  Future<String?> sendForCrop(String path) async {
     log(path);
-    Uint8List imageUint8List = await File(path).readAsBytes();
-    final editedImage = await Navigator.push(
-      Get.context!,
-      MaterialPageRoute(
-        builder: (context) => editor.ImageCropper(
-          image: imageUint8List,
-          availableRatios: const [
-            options.AspectRatio(
-              title: "1/1",
-              ratio: 1,
-            )
-          ],
-        ),
-      ),
-    );
-    final convertedImage = await ImageUtils.convert(
-      editedImage,
-      format: 'png',
-      quality: 25,
-    );
+    var image = await Get.to(() => ImageCropper(image: File(path)));
+    if (image != null) {
+      Uint8List uint8List = image as Uint8List;
+      log("LENGTH ${uint8List.length}");
+      Directory cacheDirectory = await getApplicationCacheDirectory();
+      log(cacheDirectory.path);
+      File imageFile =
+          File('${cacheDirectory.path}/${DateTime.now().millisecond}.png');
 
-    Directory cacheDirectory = await getApplicationCacheDirectory();
-    log(cacheDirectory.path);
-    File image = await File('${cacheDirectory.path}/temp.jpg')
-        .writeAsBytes(convertedImage);
-    log("IMAGE : ${image.path}");
-    return File(image.path);
+      await imageFile.writeAsBytes(uint8List);
+      log("IMAGE : ${imageFile.path}");
+      int byts = (await imageFile.readAsBytes()).length;
+      log("IMAGE : ${byts}");
+
+      return imageFile.path;
+    } else {
+      log("IMAGE : Uint8List null");
+      return null;
+    }
   }
 
   pickImageFromCamera() async {
@@ -126,7 +116,7 @@ buildPikeImageChooseDialog(void Function(File? image) onImagePick) async {
     final ImagePicker picker = ImagePicker();
     final XFile? img = await picker.pickImage(
       source: ImageSource.camera,
-      imageQuality: 100,
+      imageQuality: 20,
     );
     if (img != null) {
       onImagePick(await sendForCrop(img.path));
@@ -138,7 +128,7 @@ buildPikeImageChooseDialog(void Function(File? image) onImagePick) async {
     final ImagePicker picker = ImagePicker();
     XFile? img = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 100,
+      imageQuality: 20,
     );
     if (img != null) {
       onImagePick(await sendForCrop(img.path));

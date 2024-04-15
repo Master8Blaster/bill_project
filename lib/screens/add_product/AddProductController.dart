@@ -22,7 +22,7 @@ class AddProductController extends GetxController {
   TextEditingController tfProductName = TextEditingController();
   TextEditingController tfProductPrice = TextEditingController();
   TextEditingController tfProductQuantity = TextEditingController();
-  File? imageProduct;
+  Rx<String> imageProduct = "".obs;
 
   GlobalKey<FormState> keyForm = GlobalKey<FormState>();
   HomeController controllerHome = Get.find(tag: "HOMECONTROLLER");
@@ -49,13 +49,13 @@ class AddProductController extends GetxController {
       tfProductName.text = modelUpdate!.name;
       tfProductPrice.text = modelUpdate!.price.toString();
       tfProductQuantity.text = modelUpdate!.quantity.toString();
-      imageProduct = null;
+      imageProduct.value = "";
       update();
     } else {
       tfProductName.text = "";
       tfProductPrice.text = "";
       tfProductQuantity.text = "0";
-      imageProduct = null;
+      imageProduct.value = "";
       update();
     }
   }
@@ -130,7 +130,7 @@ class AddProductController extends GetxController {
 
     try {
       if (keyForm.currentState != null && keyForm.currentState!.validate()) {
-        if (!isFromUpdate && imageProduct == null) {
+        if (!isFromUpdate && imageProduct.value == null) {
           showSnackBarWithText("Please select Product image!");
         } else if (tfProductName.text.isEmpty) {
           showSnackBarWithText("Please enter Product Name!");
@@ -142,15 +142,15 @@ class AddProductController extends GetxController {
           getOverlay();
           await Future.delayed(const Duration(seconds: 1));
           String imageSortUrl = "";
-          if (isFromUpdate && imageProduct == null) {
+          if (isFromUpdate && imageProduct.value == null) {
             imageSortUrl = modelUpdate!.imageName;
             saveData(modelUpdate!.imageUrl, imageSortUrl);
           } else {
             imageSortUrl =
-                "$keyFolderUsers/$userId/$keyFolderProductImages/${tfProductName.text.trim()}.${imageProduct!.path.split(".").last}";
+                "$keyFolderUsers/$userId/$keyFolderProductImages/${tfProductName.text.trim()}.${imageProduct.value.split(".").last}";
 
             UploadTask? uploadTask =
-                await uploadImage(imageProduct, imageSortUrl);
+                await uploadImage(File(imageProduct.value), imageSortUrl);
             if (uploadTask != null) {
               uploadTask.then(
                 (snapshot) async {
@@ -199,11 +199,10 @@ class AddProductController extends GetxController {
 
   void pickupImage() {
     buildPikeImageChooseDialog(
-      (image) {
-        if (image != null) {
-          imageProduct = File(image.path);
-          update();
-        }
+      (image) async {
+        log(image!);
+        imageProduct.trigger(image);
+        update();
       },
     );
   }

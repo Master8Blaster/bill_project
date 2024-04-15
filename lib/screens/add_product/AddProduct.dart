@@ -1,7 +1,9 @@
+import 'dart:io';
+
+import 'package:bill_project/conponents/ImageNetwork.dart';
 import 'package:bill_project/conponents/ThemedTextField.dart';
 import 'package:bill_project/utils/colors.dart';
 import 'package:bill_project/utils/constants.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -34,63 +36,51 @@ class AddProduct extends GetView<AddProductController> {
                       const SizedBox(
                         height: spaceVertical * 5,
                       ),
-                      SizedBox(
-                        width: Get.width / 2,
-                        child: AspectRatio(
-                          aspectRatio: 1,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: boxBorderRadius,
-                              border: Border.all(color: colorPrimary.shade300),
-                              color: colorWhite,
-                            ),
-                            padding: const EdgeInsets.all(2),
-                            child: ClipRRect(
-                              borderRadius:
-                                  BorderRadius.circular(borderRadius - 1),
-                              clipBehavior: Clip.antiAliasWithSaveLayer,
-                              child: Hero(
-                                tag: "PRODUCT-IMAGE",
-                                child: InkWell(
-                                  onTap: controller.pickupImage,
-                                  child: controller.isFromUpdate &&
-                                          controller.imageProduct == null
-                                      ? CachedNetworkImage(
-                                          imageUrl:
-                                              controller.modelUpdate!.imageUrl,
-                                          imageBuilder:
-                                              (context, imageProvider) {
-                                            return Container(
-                                              color: Colors.white,
-                                              child:
-                                                  Image(image: imageProvider),
-                                            );
-                                          },
-                                          progressIndicatorBuilder: (context,
-                                                  url, downloadProgress) =>
-                                              Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                            value: downloadProgress.progress,
-                                            color: colorPrimary,
-                                            strokeWidth: 2,
-                                          )),
-                                          errorWidget: (context, url, error) =>
-                                              const Icon(Icons.error),
-                                        )
-                                      : controller.imageProduct != null
-                                          ? Image.file(
-                                              controller.imageProduct!,
-                                              fit: BoxFit.fill,
-                                            )
-                                          : Center(
-                                              child: Text(
-                                                "Please select image",
-                                                style: TextStyle(
-                                                  color: colorPrimary.shade300,
+                      Obx(
+                        () => SizedBox(
+                          width: Get.width / 2,
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: boxBorderRadius,
+                                border:
+                                    Border.all(color: colorPrimary.shade300),
+                                color: colorWhite,
+                              ),
+                              padding: const EdgeInsets.all(2),
+                              child: ClipRRect(
+                                borderRadius:
+                                    BorderRadius.circular(borderRadius - 1),
+                                clipBehavior: Clip.antiAliasWithSaveLayer,
+                                child: Hero(
+                                  tag: "PRODUCT-IMAGE",
+                                  child: InkWell(
+                                    onTap: controller.pickupImage,
+                                    child: controller.isFromUpdate &&
+                                            controller
+                                                .imageProduct.value.isEmpty
+                                        ? ImageNetwork(
+                                            imageUrl: controller
+                                                .modelUpdate!.imageUrl,
+                                          )
+                                        : controller
+                                                .imageProduct.value.isNotEmpty
+                                            ? Image.file(
+                                                File(controller
+                                                    .imageProduct.value),
+                                                fit: BoxFit.fill,
+                                              )
+                                            : Center(
+                                                child: Text(
+                                                  "Please select image",
+                                                  style: TextStyle(
+                                                    color:
+                                                        colorPrimary.shade300,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -109,7 +99,8 @@ class AddProduct extends GetView<AddProductController> {
                         validator: (p0) {
                           if (p0 == null || p0.isEmpty) {
                             return "Please enter Product Name!";
-                          } else if (!controller.isFromUpdate && !controller.isProductIsUnique(p0)) {
+                          } else if (!controller.isFromUpdate &&
+                              !controller.isProductIsUnique(p0)) {
                             return "Please enter different Product Name! We found this name in your Product list.";
                           }
                           return null;

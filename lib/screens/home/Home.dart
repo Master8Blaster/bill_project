@@ -2,6 +2,7 @@ import 'package:bill_project/conponents/ImageNetwork.dart';
 import 'package:bill_project/conponents/ThemedTextField.dart';
 import 'package:bill_project/screens/add_product/AddProduct.dart';
 import 'package:bill_project/screens/home/HomeController.dart';
+import 'package:bill_project/screens/transaction_history/TransactionHistory.dart';
 import 'package:bill_project/utils/colors.dart';
 import 'package:bill_project/utils/constants.dart';
 import 'package:flutter/material.dart';
@@ -13,20 +14,22 @@ class Home extends GetView<HomeController> {
   HomeController controller = Get.put(HomeController(), tag: "HOMECONTROLLER");
   GlobalKey<ScaffoldState> _keyScaffold = GlobalKey<ScaffoldState>();
 
+  RxInt column = 2.obs;
+
   int getGridColumnCount() {
-    if (GetPlatform.isMobile) {
-      return 2;
-    } else {
-      return (Get.width / 180).ceil();
-    }
+    // print(((Get.context!.isPortrait ? Get.height :Get.width) / 180).ceil());
+    return ((Get.width) / 180).ceil();
   }
 
   @override
   Widget build(BuildContext context) {
+    column.value = ((Get.width) / 200).ceil();
+    print(column.value);
     return Scaffold(
       key: _keyScaffold,
       appBar: AppBar(
         title: const Text("Test Project"),
+        titleSpacing: 0,
         actions: [
           Obx(
             () => !controller.isLoading.value &&
@@ -62,26 +65,27 @@ class Home extends GetView<HomeController> {
         ],
       ),
       endDrawer: _buildEndDrawer(),
+      drawer: _buildDrawer(),
       floatingActionButton: _buildFloatingCartBar(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: SizedBox(
         width: Get.width,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: spaceHorizontal),
-          child: Column(
-            children: [
-              const SizedBox(height: spaceVertical * 1),
-              ThemedTextField(
-                preFix: const Icon(Icons.search),
-                onChanged: (p0) => controller.search(p0),
-              ),
-              const SizedBox(height: spaceVertical * 1),
-              Expanded(
-                child: Obx(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: spaceVertical * 1),
+                ThemedTextField(
+                  preFix: const Icon(Icons.search),
+                  onChanged: (p0) => controller.search(p0),
+                ),
+                const SizedBox(height: spaceVertical * 1),
+                Obx(
                   () => RefreshIndicator(
                     onRefresh: () => controller.getData(),
                     child: controller.isLoading.value
-                        ? const Center(
+                        ? const SizedBox(
                             child: CircularProgressIndicator(
                               color: colorPrimary,
                               strokeWidth: 2,
@@ -89,13 +93,16 @@ class Home extends GetView<HomeController> {
                           )
                         : controller.listSearchedProduct.isNotEmpty
                             ? GridView.builder(
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
                                 gridDelegate:
                                     SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: getGridColumnCount(),
+                                  crossAxisCount: column.value,
                                   mainAxisSpacing: spaceVertical / 2,
                                   crossAxisSpacing: spaceHorizontal / 2,
                                   childAspectRatio: .75,
                                 ),
+                                padding: const EdgeInsets.only(bottom: 100),
                                 itemCount:
                                     controller.listSearchedProduct.value.length,
                                 itemBuilder: (context, index) {
@@ -255,8 +262,8 @@ class Home extends GetView<HomeController> {
                               ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -323,7 +330,7 @@ class Home extends GetView<HomeController> {
               shape: BoxShape.circle,
             ),
             padding: const EdgeInsets.all(
-              spaceHorizontal * 2,
+              spaceHorizontal * 1.5,
             ),
             child: Text(
               model.quantity.value.toString(),
@@ -414,58 +421,70 @@ class Home extends GetView<HomeController> {
   _buildFloatingCartBar() {
     return Obx(
       () => AnimatedCrossFade(
-        firstChild: SizedBox(
-          width: Get.width - spaceHorizontal * 2,
-          height: 60,
-          child: FloatingActionButton(
-            onPressed: () {},
-            backgroundColor: colorPrimary.shade50,
-            isExtended: true,
-            elevation: 2,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: spaceHorizontal),
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  const SizedBox(width: spaceHorizontal),
-                  const Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 36,
-                  ),
-                  const SizedBox(width: spaceHorizontal * 1.5),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "₹${controller.total.value}",
-                          style: const TextStyle(
-                            color: colorPrimary,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 18,
-                            height: 0,
-                          ),
-                        ),
-                        Text(
-                          "Qty : ${controller.totalQuantity.value}",
-                          style: const TextStyle(
-                            color: colorPrimary,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                            height: 0,
-                          ),
-                        ),
-                      ],
+        firstChild: Padding(
+          padding: const EdgeInsets.all(3),
+          child: SizedBox(
+            width: Get.width - spaceHorizontal * 2,
+            height: 60,
+            child: FloatingActionButton(
+              onPressed: () {
+                if (_keyScaffold.currentState != null) {
+                  _keyScaffold.currentState!.openEndDrawer();
+                }
+              },
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+              backgroundColor: colorPrimary.shade50,
+              isExtended: true,
+              elevation: 2,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: spaceHorizontal),
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    const SizedBox(width: spaceHorizontal),
+                    const Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 30,
                     ),
-                  ),
-                  FilledButton(
-                    onPressed: () {
-                      controller.checkout();
-                    },
-                    child: const Text("Checkout"),
-                  )
-                ],
+                    const SizedBox(width: spaceHorizontal * 1.5),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "₹${controller.total.value}",
+                            style: const TextStyle(
+                              color: colorPrimary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                              height: 0,
+                            ),
+                          ),
+                          Text(
+                            "Qty : ${controller.totalQuantity.value}",
+                            style: const TextStyle(
+                              color: colorPrimary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                              height: 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    FilledButton(
+                      onPressed: () {
+                        controller.checkout();
+                        // PrintingClass().printTicket();
+                      },
+                      child: const Text("Checkout"),
+                    )
+                  ],
+                ),
               ),
             ),
           ),
@@ -662,87 +681,89 @@ class Home extends GetView<HomeController> {
                 height: 1,
               ),
               const SizedBox(height: spaceVertical / 2),
-              Container(
-                width: Get.width,
-                decoration: BoxDecoration(
-                  color: colorWhite,
-                  borderRadius: boxBorderRadius,
-                  border: Border.all(color: colorPrimary.shade200),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  vertical: spaceVertical * 1.5,
-                  horizontal: spaceHorizontal,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Total :",
-                          style: TextStyle(
-                            color: colorPrimary,
-                            fontSize: 18,
-                            height: 0,
+              Obx(
+                () => Container(
+                  width: Get.width,
+                  decoration: BoxDecoration(
+                    color: colorWhite,
+                    borderRadius: boxBorderRadius,
+                    border: Border.all(color: colorPrimary.shade200),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: spaceVertical * 1.5,
+                    horizontal: spaceHorizontal,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Total :",
+                            style: TextStyle(
+                              color: colorPrimary,
+                              fontSize: 18,
+                              height: 0,
+                            ),
                           ),
-                        ),
-                        Text(
-                          "₹${controller.total.value}",
-                          style: const TextStyle(
-                            color: colorPrimary,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 18,
-                            height: 0,
+                          Text(
+                            "₹${controller.total.value}",
+                            style: const TextStyle(
+                              color: colorPrimary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 18,
+                              height: 0,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Product Count :",
-                          style: TextStyle(
-                            color: colorPrimary,
-                            fontSize: 18,
-                            height: 0,
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Product Count :",
+                            style: TextStyle(
+                              color: colorPrimary,
+                              fontSize: 18,
+                              height: 0,
+                            ),
                           ),
-                        ),
-                        Text(
-                          "${controller.listCartProduct.length}",
-                          style: const TextStyle(
-                            color: colorPrimary,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 18,
-                            height: 0,
+                          Text(
+                            "${controller.listCartProduct.length}",
+                            style: const TextStyle(
+                              color: colorPrimary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 18,
+                              height: 0,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Quantity :",
-                          style: TextStyle(
-                            color: colorPrimary,
-                            fontSize: 18,
-                            height: 0,
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Quantity :",
+                            style: TextStyle(
+                              color: colorPrimary,
+                              fontSize: 18,
+                              height: 0,
+                            ),
                           ),
-                        ),
-                        Text(
-                          "${controller.totalQuantity.value}",
-                          style: const TextStyle(
-                            color: colorPrimary,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 18,
-                            height: 0,
+                          Text(
+                            "${controller.totalQuantity.value}",
+                            style: const TextStyle(
+                              color: colorPrimary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 18,
+                              height: 0,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: spaceVertical),
@@ -750,6 +771,9 @@ class Home extends GetView<HomeController> {
                 width: Get.width,
                 child: FilledButton(
                   onPressed: () {
+                    if (_keyScaffold.currentState != null) {
+                      _keyScaffold.currentState!.closeEndDrawer();
+                    }
                     controller.checkout();
                   },
                   child: const Text("Checkout"),
@@ -760,6 +784,81 @@ class Home extends GetView<HomeController> {
           ),
         ),
       ),
+    );
+  }
+
+  _buildDrawer() {
+    return SafeArea(
+      child: Drawer(
+        backgroundColor: colorWhite,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: spaceHorizontal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: spaceVertical * 10),
+              const Text(
+                "Hii, There",
+                style: TextStyle(
+                  color: colorPrimary,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 24,
+                ),
+              ),
+              const Text(
+                "master8blaster@gmail.com",
+                style: TextStyle(
+                  color: colorPrimary,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: spaceVertical),
+              const Divider(
+                height: 1,
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildRow(
+                        title: 'Transaction History',
+                        leading: const Icon(Icons.history_rounded),
+                        onTap: () {
+                          Get.to(() => TransactionHistory());
+                        },
+                      )
+                    ],
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              const SizedBox(height: spaceVertical / 2),
+              const SizedBox(height: spaceVertical),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  _buildRow(
+      {required String title,
+      required Widget leading,
+      void Function()? onTap}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: leading,
+          title: Text(title),
+          onTap: onTap,
+        ),
+        const Divider(
+          height: .5,
+          indent: 55,
+        ),
+      ],
     );
   }
 }

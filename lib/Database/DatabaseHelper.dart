@@ -85,4 +85,9 @@ class DatabaseHelper {
     return await db.delete(CartDbModel.tableName,
         where: "${CartDbModel.productKey}='$key'");
   }
+
+  Future<int> deleteAllCartProducts() async {
+    Database db = await instance.database;
+    return await db.delete(CartDbModel.tableName);
+  }
 }
