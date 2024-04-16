@@ -11,6 +11,9 @@ class TransactionHistoryController extends GetxController {
 
   RxBool isLoading = true.obs;
 
+  DateTime filterStartDate = DateTime.now();
+  DateTime filterEndDate = DateTime.now();
+
   @override
   void onInit() {
     super.onInit();
@@ -22,7 +25,7 @@ class TransactionHistoryController extends GetxController {
       isLoading.trigger(true);
       String userId = await Preferences().getPrefString(Preferences.prefUserId);
       DatabaseReference ref =
-          FirebaseDatabase.instance.ref("$keyUsers/$userId/$keyTransaction");
+          FirebaseDatabase.instance.ref(getTransactionPath(userId));
       DatabaseEvent event = await ref.once();
       print("Response ${event.type}");
       listTransaction.clear();
@@ -54,14 +57,12 @@ class TransactionHistoryController extends GetxController {
             productIds:
                 snapshot.child(keyTransactionProductIds).value.toString(),
             paymentType: int.tryParse(snapshot
-                    .child(keyTransactionTotalProductCount)
+                    .child(keyTransactionPaymentType)
                     .value
                     .toString()) ??
                 0,
-            dateTime: DateTime.fromMillisecondsSinceEpoch(int.tryParse(snapshot
-                    .child(keyTransactionDateTime)
-                    .value
-                    .toString()) ??
+            dateTime: DateTime.fromMillisecondsSinceEpoch(int.tryParse(
+                    snapshot.child(keyTransactionDateTime).value.toString()) ??
                 0),
           ),
         );
@@ -71,6 +72,16 @@ class TransactionHistoryController extends GetxController {
       print("GETDATA ${e.toString()}");
     } finally {
       isLoading.trigger(false);
+    }
+  }
+
+  applyFilter() {
+    listSearchedTransaction.clear();
+    for (TransactionModel model in listTransaction) {
+      if (model.dateTime.isAfter(filterStartDate) &&
+          model.dateTime.isBefore(filterEndDate)) {
+        listSearchedTransaction.add(model);
+      }
     }
   }
 }

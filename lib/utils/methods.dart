@@ -2,12 +2,15 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:bill_project/conponents/ImageCroper.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../conponents/Widgets.dart';
 import 'colors.dart';
 
 // import 'package:image_cropper/image_cropper.dart';
@@ -38,6 +41,19 @@ String? validateEmail(String value) {
   } else {
     return null;
   }
+}
+
+// Function to validate the
+// upi_Id Code
+bool isValidUpi(String upi_Id) {
+  if (upi_Id.isEmpty) {
+    return false;
+  }
+
+  print(RegExp(r'^[0-9A-Za-z.-]{2,256}@[A-Za-z]{2,64}$')
+      .hasMatch(upi_Id));
+  return RegExp(r'^[0-9A-Za-z.-]{2,256}@[A-Za-z]{2,64}$')
+      .hasMatch(upi_Id);
 }
 
 bool _isLoading = false;
@@ -300,4 +316,30 @@ buildConfirmationDialog(
   ).then((value) {
     if (onclose != null) onclose;
   });
+}
+
+Future<UploadTask?> uploadImage(File? file, String path) async {
+  if (file == null) {
+    showSnackBarWithText("No File Detected!");
+    return null;
+  }
+
+  UploadTask uploadTask;
+
+  log("uploadImage ${file.path.split(".").last}");
+  // Create a Reference to the file
+  Reference ref = FirebaseStorage.instance.ref(path);
+
+  // final metadata = SettableMetadata(
+  //   contentType: 'image/jpeg',
+  //   customMetadata: {'picked-file-path': file.path},
+  // );
+
+  if (kIsWeb) {
+    uploadTask = ref.putData(await file.readAsBytes());
+  } else {
+    uploadTask = ref.putFile(File(file.path));
+  }
+
+  return Future.value(uploadTask);
 }

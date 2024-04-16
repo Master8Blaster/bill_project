@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../utils/colors.dart';
-
+import '../utils/constants.dart';
 
 showSnackBarWithText(String strText,
     {Color color = Colors.redAccent,
@@ -29,18 +29,61 @@ showSnackBarWithText(String strText,
   }
 }
 
-Widget buildNoData(String data) {
-  return SizedBox(
-    height: 300,
-    child: Center(
-      child: Text(
-        data,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: colorBlack,
-          fontWeight: FontWeight.w500,
-          fontSize: 20,
+Widget buildNoData({Widget? action}) {
+  return Container(
+    width: Get.width - 30,
+    decoration: BoxDecoration(
+      borderRadius: boxBorderRadius,
+      border: Border.all(color: colorPrimary.shade100),
+      color: colorWhite,
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          height: 80,
+          width: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colorPrimary.shade50,
+          ),
+          child: const Icon(
+            Icons.card_travel_rounded,
+            size: 50,
+          ),
         ),
+        const SizedBox(height: spaceVertical * 2),
+        const Text(
+          "Ohh.. Sorry!",
+          style: TextStyle(
+            color: colorPrimary,
+            fontWeight: FontWeight.w500,
+            fontSize: 24,
+          ),
+        ),
+        const Text(
+          "There is nothing to show.",
+          style: TextStyle(
+            color: colorPrimary,
+            fontWeight: FontWeight.w500,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: spaceVertical * 2),
+        if (action != null) action,
+      ],
+    ),
+  );
+}
+
+Widget buildLoaderIndicator() {
+  return const SizedBox(
+    height: 100,
+    child: Center(
+      child: CircularProgressIndicator(
+        color: colorPrimary,
+        strokeWidth: 2,
       ),
     ),
   );

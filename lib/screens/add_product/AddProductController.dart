@@ -10,7 +10,6 @@ import 'package:bill_project/utils/methods.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../Database/DatabaseHelper.dart';
@@ -63,35 +62,9 @@ class AddProductController extends GetxController {
   Future<void> saveProduct() async {
     String userId = await Preferences().getPrefString(Preferences.prefUserId);
 
-    Future<UploadTask?> uploadImage(File? file, String path) async {
-      if (file == null) {
-        showSnackBarWithText("No File Detected!");
-        return null;
-      }
-
-      UploadTask uploadTask;
-
-      log("uploadImage ${file.path.split(".").last}");
-      // Create a Reference to the file
-      Reference ref = FirebaseStorage.instance.ref(path);
-
-      // final metadata = SettableMetadata(
-      //   contentType: 'image/jpeg',
-      //   customMetadata: {'picked-file-path': file.path},
-      // );
-
-      if (kIsWeb) {
-        uploadTask = ref.putData(await file.readAsBytes());
-      } else {
-        uploadTask = ref.putFile(File(file.path));
-      }
-
-      return Future.value(uploadTask);
-    }
-
     saveData(String imageUrl, String imageName) async {
       DatabaseReference ref =
-          FirebaseDatabase.instance.ref("$keyUsers/$userId/$keyProduct");
+          FirebaseDatabase.instance.ref(getProductsPath(userId));
       final key = isFromUpdate ? modelUpdate!.productKey : ref.push().key;
       if (key != null) {
         await ref.child(key).set({
@@ -142,12 +115,12 @@ class AddProductController extends GetxController {
           getOverlay();
           await Future.delayed(const Duration(seconds: 1));
           String imageSortUrl = "";
-          if (isFromUpdate && imageProduct.value == null) {
+          if (isFromUpdate && imageProduct.value.isEmpty) {
             imageSortUrl = modelUpdate!.imageName;
             saveData(modelUpdate!.imageUrl, imageSortUrl);
           } else {
             imageSortUrl =
-                "$keyFolderUsers/$userId/$keyFolderProductImages/${tfProductName.text.trim()}.${imageProduct.value.split(".").last}";
+                "${getProductsImagePath(userId)}/${tfProductName.text.trim()}.${imageProduct.value.split(".").last}";
 
             UploadTask? uploadTask =
                 await uploadImage(File(imageProduct.value), imageSortUrl);

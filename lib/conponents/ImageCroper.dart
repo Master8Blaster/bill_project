@@ -6,6 +6,8 @@ import 'package:crop_image/crop_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../utils/constants.dart';
+
 class ImageCropper extends StatefulWidget {
   final File image;
 
@@ -48,6 +50,7 @@ class _ImageCropperState extends State<ImageCropper> {
               },
               child: const Text("Done"),
             ),
+            const SizedBox(width: spaceHorizontal),
           ],
         ),
         body: CropImage(

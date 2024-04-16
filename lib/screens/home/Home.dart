@@ -1,6 +1,7 @@
 import 'package:bill_project/conponents/ImageNetwork.dart';
 import 'package:bill_project/conponents/ThemedTextField.dart';
 import 'package:bill_project/screens/add_product/AddProduct.dart';
+import 'package:bill_project/screens/business_detail/BusinessDetail.dart';
 import 'package:bill_project/screens/home/HomeController.dart';
 import 'package:bill_project/screens/transaction_history/TransactionHistory.dart';
 import 'package:bill_project/utils/colors.dart';
@@ -8,18 +9,18 @@ import 'package:bill_project/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../conponents/Widgets.dart';
+import '../business_detail/BusinessDetailController.dart';
 import 'models/ProductModel.dart';
 
 class Home extends GetView<HomeController> {
   HomeController controller = Get.put(HomeController(), tag: "HOMECONTROLLER");
-  GlobalKey<ScaffoldState> _keyScaffold = GlobalKey<ScaffoldState>();
+
+  final GlobalKey<ScaffoldState> _keyScaffold = GlobalKey<ScaffoldState>();
 
   RxInt column = 2.obs;
 
-  int getGridColumnCount() {
-    // print(((Get.context!.isPortrait ? Get.height :Get.width) / 180).ceil());
-    return ((Get.width) / 180).ceil();
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -32,15 +33,17 @@ class Home extends GetView<HomeController> {
         titleSpacing: 0,
         actions: [
           Obx(
-            () => !controller.isLoading.value &&
-                    controller.listSearchedProduct.isEmpty
-                ? IconButton.filledTonal(
-                    onPressed: () {
-                      controller.getData();
-                    },
-                    icon: const Icon(Icons.refresh_rounded),
-                  )
-                : Container(),
+            () => AnimatedSwitcher(
+              duration: switcherDuration,
+              child: !controller.isLoading.value
+                  ? IconButton.filledTonal(
+                      onPressed: () {
+                        controller.getData();
+                      },
+                      icon: const Icon(Icons.refresh_rounded),
+                    )
+                  : Container(),
+            ),
           ),
           IconButton.filledTonal(
             onPressed: () async {
@@ -50,16 +53,19 @@ class Home extends GetView<HomeController> {
             icon: const Icon(Icons.add_rounded),
           ),
           Obx(
-            () => controller.totalQuantity.value > 0
-                ? IconButton.filledTonal(
-                    onPressed: () {
-                      if (_keyScaffold.currentState != null) {
-                        _keyScaffold.currentState!.openEndDrawer();
-                      }
-                    },
-                    icon: const Icon(Icons.shopping_cart_outlined),
-                  )
-                : Container(),
+            () => AnimatedSwitcher(
+              duration: switcherDuration,
+              child: controller.totalQuantity.value > 0
+                  ? IconButton.filledTonal(
+                      onPressed: () {
+                        if (_keyScaffold.currentState != null) {
+                          _keyScaffold.currentState!.openEndDrawer();
+                        }
+                      },
+                      icon: const Icon(Icons.shopping_cart_outlined),
+                    )
+                  : Container(),
+            ),
           ),
           const SizedBox(width: spaceHorizontal),
         ],
@@ -72,198 +78,146 @@ class Home extends GetView<HomeController> {
         width: Get.width,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: spaceHorizontal),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: spaceVertical * 1),
-                ThemedTextField(
-                  preFix: const Icon(Icons.search),
-                  onChanged: (p0) => controller.search(p0),
+          child: RefreshIndicator(
+            onRefresh: () => controller.getData(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  const SizedBox(height: spaceVertical * 1),
+                  ThemedTextField(
+                    preFix: const Icon(Icons.search),
+                    onChanged: (p0) => controller.search(p0),
+                    hintText: "Search product here..",
+                  ),
+                  const SizedBox(height: spaceVertical * 1),
+                  Obx(
+                    () => AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 500),
+                      child: controller.isLoading.value
+                          ? buildLoaderIndicator()
+                          : controller.listSearchedProduct.isNotEmpty
+                              ? GridView.builder(
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: column.value,
+                                    mainAxisSpacing: spaceVertical / 2,
+                                    crossAxisSpacing: spaceHorizontal / 2,
+                                    childAspectRatio: .75,
+                                  ),
+                                  padding: const EdgeInsets.only(bottom: 100),
+                                  itemCount: controller
+                                      .listSearchedProduct.value.length,
+                                  itemBuilder: (context, index) {
+                                    ProductModel model =
+                                        controller.listSearchedProduct[index];
+                                    return _buildItems(model, index);
+                                  },
+                                )
+                              : buildNoData(
+                                  action: FilledButton.tonal(
+                                    onPressed: () async {
+                                      await Get.to(() => AddProduct());
+                                      controller.getData();
+                                    },
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.add_rounded),
+                                        SizedBox(width: spaceHorizontal / 2),
+                                        Text("Add Products"),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  _buildItems(ProductModel model, int index) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: colorPrimary.shade300,
+        ),
+        borderRadius: boxBorderRadius,
+      ),
+      padding: const EdgeInsets.all(2),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius - 2),
+        child: InkWell(
+          onTap: model.quantity.value == 0
+              ? () {
+                  model.quantity.value++;
+                  controller.addToCartProduct(model);
+                }
+              : null,
+          child: Column(
+            children: [
+              AspectRatio(
+                aspectRatio: 1,
+                child: Stack(
+                  children: [
+                    Material(
+                      color: colorPrimary.shade50,
+                      child: Center(
+                        child: Hero(
+                          tag: "PRODUCT-IMAGE$index",
+                          child: ImageNetwork(
+                            imageUrl: model.imageUrl,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (model.quantity.value > 0)
+                      _buildCatButtonsAndCount(model),
+                    _buildPopupMenuWidthButton(model),
+                  ],
                 ),
-                const SizedBox(height: spaceVertical * 1),
-                Obx(
-                  () => RefreshIndicator(
-                    onRefresh: () => controller.getData(),
-                    child: controller.isLoading.value
-                        ? const SizedBox(
-                            child: CircularProgressIndicator(
-                              color: colorPrimary,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : controller.listSearchedProduct.isNotEmpty
-                            ? GridView.builder(
-                                physics: const NeverScrollableScrollPhysics(),
-                                shrinkWrap: true,
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: column.value,
-                                  mainAxisSpacing: spaceVertical / 2,
-                                  crossAxisSpacing: spaceHorizontal / 2,
-                                  childAspectRatio: .75,
-                                ),
-                                padding: const EdgeInsets.only(bottom: 100),
-                                itemCount:
-                                    controller.listSearchedProduct.value.length,
-                                itemBuilder: (context, index) {
-                                  ProductModel model =
-                                      controller.listSearchedProduct[index];
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border.all(
-                                        color: colorPrimary.shade300,
-                                      ),
-                                      borderRadius: boxBorderRadius,
-                                    ),
-                                    padding: const EdgeInsets.all(2),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(
-                                          borderRadius - 2),
-                                      child: InkWell(
-                                        onTap: model.quantity.value == 0
-                                            ? () {
-                                                model.quantity.value++;
-                                                controller
-                                                    .addToCartProduct(model);
-                                              }
-                                            : null,
-                                        child: Column(
-                                          children: [
-                                            AspectRatio(
-                                              aspectRatio: 1,
-                                              child: Stack(
-                                                children: [
-                                                  Material(
-                                                    color: colorPrimary.shade50,
-                                                    child: Center(
-                                                      child: Hero(
-                                                        tag: "PRODUCT-IMAGE",
-                                                        child: ImageNetwork(
-                                                          imageUrl:
-                                                              model.imageUrl,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  if (model.quantity.value > 0)
-                                                    _buildCatButtonsAndCount(
-                                                        model),
-                                                  _buildPopupMenuWidthButton(
-                                                      model),
-                                                ],
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal:
-                                                            spaceHorizontal),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        model.name,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        maxLines: 2,
-                                                        style: const TextStyle(
-                                                          color: colorPrimary,
-                                                          fontSize: 18,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          height: 0,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      "₹${model.price}",
-                                                      style: const TextStyle(
-                                                        color: colorPrimary,
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              )
-                            : Container(
-                                width: Get.width - 30,
-                                decoration: BoxDecoration(
-                                  borderRadius: boxBorderRadius,
-                                  border:
-                                      Border.all(color: colorPrimary.shade100),
-                                  color: colorWhite,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 30, vertical: 40),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      height: 80,
-                                      width: 80,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: colorPrimary.shade50,
-                                      ),
-                                      child: const Icon(
-                                        Icons.card_travel_rounded,
-                                        size: 50,
-                                      ),
-                                    ),
-                                    const SizedBox(height: spaceVertical * 2),
-                                    const Text(
-                                      "Ohh.. Sorry!",
-                                      style: TextStyle(
-                                        color: colorPrimary,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 24,
-                                      ),
-                                    ),
-                                    const Text(
-                                      "There is nothing to show.",
-                                      style: TextStyle(
-                                        color: colorPrimary,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 18,
-                                      ),
-                                    ),
-                                    const SizedBox(height: spaceVertical * 2),
-                                    FilledButton.tonal(
-                                      onPressed: () async {
-                                        await Get.to(() => AddProduct());
-                                        controller.getData();
-                                      },
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.add_rounded),
-                                          SizedBox(width: spaceHorizontal / 2),
-                                          Text("Add Products"),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: spaceHorizontal),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          model.name,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          style: const TextStyle(
+                            color: colorPrimary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            height: 0,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        "₹${model.price}",
+                        style: const TextStyle(
+                          color: colorPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -420,83 +374,78 @@ class Home extends GetView<HomeController> {
 
   _buildFloatingCartBar() {
     return Obx(
-      () => AnimatedCrossFade(
-        firstChild: Padding(
-          padding: const EdgeInsets.all(3),
-          child: SizedBox(
-            width: Get.width - spaceHorizontal * 2,
-            height: 60,
-            child: FloatingActionButton(
-              onPressed: () {
-                if (_keyScaffold.currentState != null) {
-                  _keyScaffold.currentState!.openEndDrawer();
-                }
-              },
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              backgroundColor: colorPrimary.shade50,
-              isExtended: true,
-              elevation: 2,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: spaceHorizontal),
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    const SizedBox(width: spaceHorizontal),
-                    const Icon(
-                      Icons.shopping_cart_outlined,
-                      size: 30,
+      () => AnimatedSwitcher(
+        duration: switcherDuration,
+        child: controller.totalQuantity.value > 0
+            ? Padding(
+                padding: const EdgeInsets.all(3),
+                child: SizedBox(
+                  width: Get.width - spaceHorizontal * 2,
+                  height: 60,
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      if (_keyScaffold.currentState != null) {
+                        _keyScaffold.currentState!.openEndDrawer();
+                      }
+                    },
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
                     ),
-                    const SizedBox(width: spaceHorizontal * 1.5),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    backgroundColor: colorPrimary.shade50,
+                    isExtended: true,
+                    elevation: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: spaceHorizontal),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.max,
                         children: [
-                          Text(
-                            "₹${controller.total.value}",
-                            style: const TextStyle(
-                              color: colorPrimary,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16,
-                              height: 0,
+                          const SizedBox(width: spaceHorizontal),
+                          const Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 30,
+                          ),
+                          const SizedBox(width: spaceHorizontal * 1.5),
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "₹${controller.total.value}",
+                                  style: const TextStyle(
+                                    color: colorPrimary,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 16,
+                                    height: 0,
+                                  ),
+                                ),
+                                Text(
+                                  "Qty : ${controller.totalQuantity.value}",
+                                  style: const TextStyle(
+                                    color: colorPrimary,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12,
+                                    height: 0,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          Text(
-                            "Qty : ${controller.totalQuantity.value}",
-                            style: const TextStyle(
-                              color: colorPrimary,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 12,
-                              height: 0,
-                            ),
-                          ),
+                          FilledButton(
+                            onPressed: () {
+                              controller.checkout();
+                              // PrintingClass().printTicket();
+                            },
+                            child: const Text("Checkout"),
+                          )
                         ],
                       ),
                     ),
-                    FilledButton(
-                      onPressed: () {
-                        controller.checkout();
-                        // PrintingClass().printTicket();
-                      },
-                      child: const Text("Checkout"),
-                    )
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ),
-        ),
-        secondChild: const SizedBox(),
-        crossFadeState: controller.totalQuantity.value > 0
-            ? CrossFadeState.showFirst
-            : CrossFadeState.showSecond,
-        secondCurve: Curves.easeInOutSine,
-        firstCurve: Curves.easeInOutSine,
-        sizeCurve: Curves.easeInOutSine,
-        duration: const Duration(milliseconds: 300),
+              )
+            : const SizedBox(),
       ),
     );
   }
@@ -788,6 +737,26 @@ class Home extends GetView<HomeController> {
   }
 
   _buildDrawer() {
+    _buildRow(
+        {required String title,
+        required Widget leading,
+        void Function()? onTap}) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: leading,
+            title: Text(title),
+            onTap: onTap,
+          ),
+          const Divider(
+            height: .5,
+            indent: 55,
+          ),
+        ],
+      );
+    }
+
     return SafeArea(
       child: Drawer(
         backgroundColor: colorWhite,
@@ -822,12 +791,25 @@ class Home extends GetView<HomeController> {
                   child: Column(
                     children: [
                       _buildRow(
+                        title: 'Business Details',
+                        leading: const Icon(Icons.business_rounded),
+                        onTap: () {
+                          if (_keyScaffold.currentState != null) {
+                            _keyScaffold.currentState!.closeDrawer();
+                          }
+                          Get.to(() => BusinessDetail());
+                        },
+                      ),
+                      _buildRow(
                         title: 'Transaction History',
                         leading: const Icon(Icons.history_rounded),
                         onTap: () {
+                          if (_keyScaffold.currentState != null) {
+                            _keyScaffold.currentState!.closeDrawer();
+                          }
                           Get.to(() => TransactionHistory());
                         },
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -839,26 +821,6 @@ class Home extends GetView<HomeController> {
           ),
         ),
       ),
-    );
-  }
-
-  _buildRow(
-      {required String title,
-      required Widget leading,
-      void Function()? onTap}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          leading: leading,
-          title: Text(title),
-          onTap: onTap,
-        ),
-        const Divider(
-          height: .5,
-          indent: 55,
-        ),
-      ],
     );
   }
 }

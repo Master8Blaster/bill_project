@@ -235,6 +235,11 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
           color: widget.hintTextColor,
         ),
         labelText: widget.labelText,
+        labelStyle: TextStyle(
+          fontWeight: widget.hintFontWeight,
+          fontSize: widget.hintFontSized,
+          color: widget.hintTextColor,
+        ),
         contentPadding: const EdgeInsets.symmetric(
             horizontal: spaceHorizontal * 2, vertical: spaceVertical * 1.2),
         filled: widget.backgroundColor != null ? true : false,

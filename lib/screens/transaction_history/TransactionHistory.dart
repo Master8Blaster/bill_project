@@ -1,3 +1,4 @@
+import 'package:bill_project/firebase/keys.dart';
 import 'package:bill_project/screens/transaction_history/models/TransactionModel.dart';
 import 'package:bill_project/utils/colors.dart';
 import 'package:bill_project/utils/constants.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../conponents/Widgets.dart';
 import 'TransactionHistoryController.dart';
 
 class TransactionHistory extends GetView<TransactionHistoryController> {
@@ -19,82 +21,130 @@ class TransactionHistory extends GetView<TransactionHistoryController> {
       appBar: AppBar(
         title: const Text("Transaction History"),
         titleSpacing: 0,
+        centerTitle: true,
+        actions: [
+          Obx(
+            () => AnimatedSwitcher(
+              duration: switcherDuration,
+              child: !controller.isLoading.value
+                  ? IconButton.filledTonal(
+                      onPressed: () {
+                        controller.getData();
+                      },
+                      icon: const Icon(Icons.refresh_rounded),
+                    )
+                  : Container(),
+            ),
+          ),
+          const SizedBox(width: spaceHorizontal),
+        ],
       ),
-      body: Center(
-        child: Column(
-          children: [
-            Expanded(
-              child: Obx(
-                () => RefreshIndicator(
-                  onRefresh: () => controller.getData(),
-                  child: controller.isLoading.value
-                      ? const SizedBox(
-                          child: CircularProgressIndicator(
-                            color: colorPrimary,
-                            strokeWidth: 2,
+      body: Obx(
+        () => Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: boxBorderRadius,
+                  border: Border.all(color: colorPrimary.shade100),
+                  color: colorWhite,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: spaceHorizontal,
+                  vertical: spaceVertical,
+                ),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: spaceHorizontal,
+                  vertical: spaceVertical,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "From",
+                            style: TextStyle(
+                              color: colorPrimary,
+                              fontSize: 14,
+                              height: 0,
+                            ),
                           ),
-                        )
-                      : controller.listSearchedTransaction.isNotEmpty
-                          ? ListView.builder(
-                              itemCount:
-                                  controller.listSearchedTransaction.length,
-                              itemBuilder: (context, index) {
-                                TransactionModel model =
-                                    controller.listSearchedTransaction[index];
-                                return _buildRow(
-                                  model.key,
-                                  model.totalProductCount.toString(),
-                                  model.totalQuantity.toString(),
-                                  model.totalPrice.toString(),
-                                  DateFormat("dd MMM yyyy hh:mm")
-                                      .format(model.dateTime),
-                                );
-                              },
-                            )
-                          : Container(
-                              width: Get.width - 30,
-                              decoration: BoxDecoration(
-                                borderRadius: boxBorderRadius,
-                                border:
-                                    Border.all(color: colorPrimary.shade100),
-                                color: colorWhite,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 30, vertical: 40),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    height: 80,
-                                    width: 80,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: colorPrimary.shade50,
-                                    ),
-                                    child: const Icon(
-                                      Icons.card_travel_rounded,
-                                      size: 50,
-                                    ),
-                                  ),
-                                  const SizedBox(height: spaceVertical * 2),
-                                  const Text(
-                                    "Ohh.. Sorry!",
-                                    style: TextStyle(
-                                      color: colorPrimary,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 24,
-                                    ),
-                                  ),
-                                  const Text(
-                                    "There is nothing to show.",
-                                    style: TextStyle(
-                                      color: colorPrimary,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                  const SizedBox(height: spaceVertical * 2),
-                                  FilledButton.tonal(
+                          Text(
+                            DateFormat("dd MMM yyyy")
+                                .format(controller.filterStartDate),
+                            style: const TextStyle(
+                              color: colorPrimary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 18,
+                              height: 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text(
+                            "To",
+                            style: TextStyle(
+                              color: colorPrimary,
+                              fontSize: 14,
+                              height: 0,
+                            ),
+                          ),
+                          Text(
+                            DateFormat("dd MMM yyyy")
+                                .format(controller.filterEndDate),
+                            style: const TextStyle(
+                              color: colorPrimary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 18,
+                              height: 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () => controller.getData(),
+                  child: AnimatedSwitcher(
+                    duration: switcherDuration,
+                    child: controller.isLoading.value
+                        ? buildLoaderIndicator()
+                        : controller.listSearchedTransaction.isNotEmpty
+                            ? ListView.builder(
+                                itemCount:
+                                    controller.listSearchedTransaction.length,
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                itemBuilder: (context, index) {
+                                  TransactionModel model =
+                                      controller.listSearchedTransaction[index];
+                                  return _buildRow(
+                                    model.key,
+                                    model.totalProductCount.toString(),
+                                    model.totalQuantity.toString(),
+                                    model.totalPrice.toString(),
+                                    DateFormat("dd MMM yyyy hh:mm")
+                                        .format(model.dateTime),
+                                    getStringFromPaymentMode(model.paymentType),
+                                  );
+                                },
+                              )
+                            : SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: buildNoData(
+                                  action: FilledButton.tonal(
                                     onPressed: () {
                                       Get.back();
                                     },
@@ -107,20 +157,33 @@ class TransactionHistory extends GetView<TransactionHistoryController> {
                                       ],
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
+  String getStringFromPaymentMode(PaymentType type) {
+    switch (type) {
+      case PaymentType.CASH:
+        return "Cash";
+      case PaymentType.CARD:
+        return "Card";
+      case PaymentType.ONLINE:
+        return "Online";
+      default:
+        return "Unknown";
+    }
+  }
+
   Widget _buildRow(String transId, String items, String quntity, String amount,
-      String datetime) {
+      String datetime, String tt) {
     return Container(
       margin: const EdgeInsets.symmetric(
         vertical: spaceVertical / 2,
@@ -155,7 +218,8 @@ class TransactionHistory extends GetView<TransactionHistoryController> {
             children: [
               Expanded(child: Text("Items : $items")),
               Expanded(child: Text("Qty : $quntity")),
-              Expanded(child: Text("Amount : $amount")),
+              Expanded(child: Text("TT : $tt")),
+              Expanded(child: Text("Amt : $amount")),
             ],
           ),
         ],

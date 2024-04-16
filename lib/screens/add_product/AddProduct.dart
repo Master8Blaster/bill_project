@@ -11,8 +11,9 @@ import 'AddProductController.dart';
 
 class AddProduct extends GetView<AddProductController> {
   AddProductController controller = Get.put(AddProductController());
+  int tagPosition;
 
-  AddProduct({super.key});
+  AddProduct({super.key, this.tagPosition = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -53,16 +54,18 @@ class AddProduct extends GetView<AddProductController> {
                                 borderRadius:
                                     BorderRadius.circular(borderRadius - 1),
                                 clipBehavior: Clip.antiAliasWithSaveLayer,
-                                child: Hero(
-                                  tag: "PRODUCT-IMAGE",
+                                child: Material(
                                   child: InkWell(
                                     onTap: controller.pickupImage,
                                     child: controller.isFromUpdate &&
                                             controller
                                                 .imageProduct.value.isEmpty
-                                        ? ImageNetwork(
-                                            imageUrl: controller
-                                                .modelUpdate!.imageUrl,
+                                        ? Hero(
+                                            tag: "PRODUCT-IMAGE$tagPosition",
+                                            child: ImageNetwork(
+                                              imageUrl: controller
+                                                  .modelUpdate!.imageUrl,
+                                            ),
                                           )
                                         : controller
                                                 .imageProduct.value.isNotEmpty

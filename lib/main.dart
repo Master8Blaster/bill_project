@@ -1,5 +1,6 @@
 import 'package:bill_project/screens/Splash.dart';
 import 'package:bill_project/utils/colors.dart';
+import 'package:bill_project/utils/constants.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -19,6 +20,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Flutter Demo',
       defaultTransition: Transition.fadeIn,
+      transitionDuration: switcherDuration,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

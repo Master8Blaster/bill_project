@@ -10,6 +10,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../firebase/keys.dart';
 import '../../utils/colors.dart';
+import '../business_detail/BusinessDetailController.dart';
 import 'models/ProductModel.dart';
 
 class HomeController extends GetxController {
@@ -24,9 +25,11 @@ class HomeController extends GetxController {
   RxDouble total = 0.0.obs;
   RxInt totalQuantity = 0.obs;
 
+  BusinessDetailController controllerBusiness =
+      Get.put(BusinessDetailController(), tag: "BusinessDetailController");
+
   @override
   void onInit() {
-    // TODO: implement onInit
     super.onInit();
 
     getData();
@@ -37,7 +40,7 @@ class HomeController extends GetxController {
       isLoading.trigger(true);
       String userId = await Preferences().getPrefString(Preferences.prefUserId);
       DatabaseReference ref =
-          FirebaseDatabase.instance.ref("$keyUsers/$userId/$keyProduct");
+          FirebaseDatabase.instance.ref(getProductsPath(userId));
       DatabaseEvent event = await ref.once();
       print("Response ${event.type}");
       listProduct.clear();
@@ -60,6 +63,7 @@ class HomeController extends GetxController {
         );
       }
       await mapWithCart();
+      controllerBusiness.getData();
     } catch (e) {
       print("GETDATA ${e.toString()}");
     } finally {
@@ -72,8 +76,9 @@ class HomeController extends GetxController {
       getOverlay();
       String userId = await Preferences().getPrefString(Preferences.prefUserId);
       DatabaseReference ref =
-          FirebaseDatabase.instance.ref("$keyUsers/$userId/$keyProduct/$key");
+          FirebaseDatabase.instance.ref("${getProductsPath(userId)}/$key");
       await ref.remove();
+
       getData();
       databaseHelper.deleteProduct(key);
       removeOverlay();
@@ -243,56 +248,62 @@ class HomeController extends GetxController {
   }
 
   showBottomDialogWithQr(double price) {
-    Get.bottomSheet(
-      isDismissible: false,
-      BottomSheet(
-        onClosing: () {},
-        builder: (BuildContext context) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 40),
-                QrImageView(
-                  data:
-                      "upi://pay?pa=meetdholariya203-1@okicici&am=$price&cu=INR&pn=VIPIN",
-                  version: QrVersions.auto,
-                  size: 200.0,
-                ),
-                const SizedBox(height: spaceVertical / 2),
-                Divider(
-                  color: colorPrimary.shade100,
-                  height: 1,
-                ),
-                const SizedBox(height: spaceVertical / 2),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    FilledButton.tonal(
-                      onPressed: () {
-                        Get.back();
-                      },
-                      child: const Text("Cancel"),
-                    ),
-                    const SizedBox(width: spaceHorizontal),
-                    FilledButton(
-                      onPressed: () {
-                        uploadTransaction(paymentType: PaymentType.ONLINE);
-                        Get.back();
-                      },
-                      child: const Text("Done"),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: spaceVertical),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+    if (controllerBusiness.model != null &&
+        controllerBusiness.model!.upi.isNotEmpty) {
+      Get.bottomSheet(
+        isDismissible: false,
+        BottomSheet(
+          onClosing: () {},
+          builder: (BuildContext context) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 40),
+                  QrImageView(
+                    data:
+                        "upi://pay?pa=${controllerBusiness.model!.upi}&am=$price&cu=INR&pn=VIPIN",
+                    version: QrVersions.auto,
+                    size: 200.0,
+                  ),
+                  const SizedBox(height: spaceVertical / 2),
+                  Divider(
+                    color: colorPrimary.shade100,
+                    height: 1,
+                  ),
+                  const SizedBox(height: spaceVertical / 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FilledButton.tonal(
+                        onPressed: () {
+                          Get.back();
+                        },
+                        child: const Text("Cancel"),
+                      ),
+                      const SizedBox(width: spaceHorizontal),
+                      FilledButton(
+                        onPressed: () {
+                          uploadTransaction(paymentType: PaymentType.ONLINE);
+                          Get.back();
+                        },
+                        child: const Text("Done"),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: spaceVertical),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    } else {
+      showSnackBarWithText(
+          "Upi not Available! Please register your upi id in Business Details.");
+    }
   }
 
   uploadTransaction({PaymentType paymentType = PaymentType.CASH}) async {
