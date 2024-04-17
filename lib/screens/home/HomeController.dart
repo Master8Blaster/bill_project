@@ -324,7 +324,7 @@ class HomeController extends GetxController {
 
       String userId = await Preferences().getPrefString(Preferences.prefUserId);
       DatabaseReference ref =
-          FirebaseDatabase.instance.ref("$keyUsers/$userId/$keyTransaction");
+          FirebaseDatabase.instance.ref(getTransactionPath(userId));
       final key = ref.push().key;
       print("PAYMENT ${paymentType.value}");
       if (key != null) {

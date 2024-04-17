@@ -39,33 +39,74 @@ class TransactionHistory extends GetView<TransactionHistoryController> {
           const SizedBox(width: spaceHorizontal),
         ],
       ),
+      floatingActionButton: AnimatedSwitcher(
+        duration: switcherDuration,
+        child: Obx(
+          () => controller.totalListFiltered > 0.0
+              ? Container(
+                  decoration: BoxDecoration(
+                    color: colorPrimary.shade100,
+                    borderRadius: boxBorderRadius,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: spaceHorizontal * 2,
+                    vertical: spaceVertical,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        "Total",
+                        style: TextStyle(
+                          color: colorPrimary,
+                          fontSize: 14,
+                          height: 0,
+                        ),
+                      ),
+                      Text(
+                        controller.totalListFiltered.value.toString(),
+                        style: const TextStyle(
+                          color: colorPrimary,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 18,
+                          height: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Container(),
+        ),
+      ),
       body: Obx(
         () => Center(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: boxBorderRadius,
-                  border: Border.all(color: colorPrimary.shade100),
-                  color: colorWhite,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: spaceHorizontal,
-                  vertical: spaceVertical,
-                ),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: spaceHorizontal,
-                  vertical: spaceVertical,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              InkWell(
+                onTap: () => controller.openDateDialog(),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: boxBorderRadius,
+                    border: Border.all(color: colorPrimary.shade100),
+                    color: colorPrimary.shade50,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: spaceHorizontal,
+                    vertical: spaceVertical,
+                  ),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: spaceHorizontal,
+                    vertical: spaceVertical,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             "From",
                             style: TextStyle(
                               color: colorPrimary,
@@ -74,28 +115,33 @@ class TransactionHistory extends GetView<TransactionHistoryController> {
                             ),
                           ),
                           Text(
+                            "Tap to change",
+                            style: TextStyle(
+                              color: colorPrimary,
+                              fontSize: 14,
+                              height: 0,
+                            ),
+                          ),
+                          Text(
+                            "To",
+                            style: TextStyle(
+                              color: colorPrimary,
+                              fontSize: 14,
+                              height: 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
                             DateFormat("dd MMM yyyy")
                                 .format(controller.filterStartDate),
                             style: const TextStyle(
                               color: colorPrimary,
                               fontWeight: FontWeight.w500,
                               fontSize: 18,
-                              height: 0,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text(
-                            "To",
-                            style: TextStyle(
-                              color: colorPrimary,
-                              fontSize: 14,
                               height: 0,
                             ),
                           ),
@@ -111,8 +157,8 @@ class TransactionHistory extends GetView<TransactionHistoryController> {
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               Expanded(
@@ -182,7 +228,7 @@ class TransactionHistory extends GetView<TransactionHistoryController> {
     }
   }
 
-  Widget _buildRow(String transId, String items, String quntity, String amount,
+  Widget _buildRow(String transId, String items, String quantity, String amount,
       String datetime, String tt) {
     return Container(
       margin: const EdgeInsets.symmetric(
@@ -195,7 +241,7 @@ class TransactionHistory extends GetView<TransactionHistoryController> {
       ),
       decoration: BoxDecoration(
         border: Border.all(
-          color: colorPrimary.shade200,
+          color: colorPrimary.shade100,
         ),
         color: colorWhite,
         borderRadius: boxBorderRadius,
@@ -217,9 +263,14 @@ class TransactionHistory extends GetView<TransactionHistoryController> {
           Row(
             children: [
               Expanded(child: Text("Items : $items")),
-              Expanded(child: Text("Qty : $quntity")),
+              Expanded(child: Text("Qty : $quantity")),
               Expanded(child: Text("TT : $tt")),
-              Expanded(child: Text("Amt : $amount")),
+              Expanded(
+                child: Text(
+                  "Amt : $amount",
+                  textAlign: TextAlign.end,
+                ),
+              ),
             ],
           ),
         ],

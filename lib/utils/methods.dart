@@ -20,6 +20,11 @@ import 'colors.dart';
 //   return uri;
 // }
 
+DateTime getTodayDate() {
+  DateTime today = DateTime.now();
+  return DateTime(today.year, today.month, today.day);
+}
+
 bool isValidateEmail(String value) {
   if (value.isEmpty) {
     return false; //'Enter your Email Address';
@@ -50,10 +55,8 @@ bool isValidUpi(String upi_Id) {
     return false;
   }
 
-  print(RegExp(r'^[0-9A-Za-z.-]{2,256}@[A-Za-z]{2,64}$')
-      .hasMatch(upi_Id));
-  return RegExp(r'^[0-9A-Za-z.-]{2,256}@[A-Za-z]{2,64}$')
-      .hasMatch(upi_Id);
+  print(RegExp(r'^[0-9A-Za-z.-]{2,256}@[A-Za-z]{2,64}$').hasMatch(upi_Id));
+  return RegExp(r'^[0-9A-Za-z.-]{2,256}@[A-Za-z]{2,64}$').hasMatch(upi_Id);
 }
 
 bool _isLoading = false;
